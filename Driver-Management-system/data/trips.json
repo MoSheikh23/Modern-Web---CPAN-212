@@ -1,0 +1,12 @@
+[
+    {
+      "id": 1,
+      "driverId": 1,
+      "vehicleId": 1,
+      "startLocation": "New York",
+      "endLocation": "Boston",
+      "startDate": "2024-01-15T08:00:00Z",
+      "endDate": "2024-01-15T12:00:00Z",
+      "status": "completed"
+    }
+  ]
