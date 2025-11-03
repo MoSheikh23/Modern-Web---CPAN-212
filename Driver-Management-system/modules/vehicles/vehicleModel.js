@@ -1,59 +1,45 @@
-const fs = require('fs');
-const path = require('path');
+const { Schema, model } = require('mongoose');
 
-const vehiclesPath = path.join(__dirname, '../../data/vehicles.json');
+const VehicleSchema = new Schema(
+  {
+    plate: {
+      type: String,
+      required: [true, 'Vehicle plate is required'],
+      unique: true,
+      uppercase: true,
+      trim: true,
+      match: [/^[A-Z0-9-]+$/, 'Plate must contain only letters, numbers, and hyphens']
+    },
+    make: {
+      type: String,
+      required: [true, 'Vehicle make is required'],
+      trim: true
+    },
+    model: {
+      type: String,
+      required: [true, 'Vehicle model is required'],
+      trim: true
+    },
+    year: {
+      type: Number,
+      min: [1950, 'Year must be after 1950'],
+      max: [new Date().getFullYear() + 1, 'Year is too far in the future']
+    },
+    capacity: {
+      type: Number,
+      default: 4,
+      min: [1, 'Vehicle must have at least 1 seat'],
+      max: [100, 'Vehicle capacity seems unrealistic']
+    },
+    status: {
+      type: String,
+      enum: ['available', 'maintenance', 'retired'],
+      default: 'available'
+    }
+  },
+  { timestamps: true }
+);
 
-const readVehicles = () => {
-  const data = fs.readFileSync(vehiclesPath, '');
-  return JSON.parse(data);
-};
+VehicleSchema.index({ plate: 'text', make: 'text', model: 'text' });
 
-const writeVehicles = (data) => {
-  fs.writeFileSync(vehiclesPath, JSON.stringify(data, null, 2));
-};
-
-const getAllVehicles = () => {
-  return readVehicles();
-};
-
-const getVehicleByID = (id) => {
-  const vehicles = readVehicles();
-  return vehicles.find(v => v.id === parseInt(id));
-};
-
-const addNewVehicle = (vehicleData) => {
-  const vehicles = readVehicles();
-  const newId = vehicles.length > 0 ? Math.max(...vehicles.map(v => v.id)) + 1 : 1;
-  const newVehicle = { id: newId, ...vehicleData };
-  vehicles.push(newVehicle);
-  writeVehicles(vehicles);
-  return newVehicle;
-};
-
-const updateExistingVehicle = (id, updateData) => {
-  const vehicles = readVehicles();
-  const vehicleIndex = vehicles.findIndex(v => v.id === parseInt(id));
-  if (vehicleIndex === -1) return null;
-  
-  vehicles[vehicleIndex] = { ...vehicles[vehicleIndex], ...updateData };
-  writeVehicles(vehicles);
-  return vehicles[vehicleIndex];
-};
-
-const deleteVehicle = (id) => {
-  const vehicles = readVehicles();
-  const vehicleIndex = vehicles.findIndex(v => v.id === parseInt(id));
-  if (vehicleIndex === -1) return null;
-  
-  const deletedVehicle = vehicles.splice(vehicleIndex, 1)[0];
-  writeVehicles(vehicles);
-  return deletedVehicle;
-};
-
-module.exports = {
-  getAllVehicles,
-  getVehicleByID,
-  addNewVehicle,
-  updateExistingVehicle,
-  deleteVehicle
-};
+module.exports = model('Vehicle', VehicleSchema);

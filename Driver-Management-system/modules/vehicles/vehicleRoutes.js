@@ -1,67 +1,57 @@
-const express = require("express");
-const router = express.Router();
-const { validationResult } = require("express-validator");
-const {
-  getAllVehicles,
-  getVehicleByID,
-  addNewVehicle,
-  updateExistingVehicle,
-  deleteVehicle
-} = require("./vehicleModel");
-const { validateVehicle } = require("../../shared/middlewares/vehicleValidation");
+const router = require('express').Router();
+const Vehicle = require('./vehicleModel');
+const validateVehicle = require('./vehicleValidation');
+const { buildQuery, buildSort, buildPaginate } = require('../query.utils');
 
-router.get("/", (req, res) => {
-  try {
-    const vehicles = getAllVehicles();
-    res.json(vehicles);
-  } catch (error) {
-    res.status(500).json({ error: "Server error fetching vehicles." });
-  }
+
+router.post('/', validateVehicle, async (req, res, next) => {
+  try { res.status(201).json(await Vehicle.create(req.body)); }
+  catch (e) { next(e); }
 });
 
-router.get("/:id", (req, res) => {
+
+router.get('/', async (req, res, next) => {
   try {
-    const vehicle = getVehicleByID(req.params.id);
-    if (!vehicle) return res.status(404).json({ error: "Vehicle not found" });
-    res.json(vehicle);
-  } catch (error) {
-    res.status(500).json({ error: "Server error fetching vehicle." });
-  }
+    const query = { ...buildQuery(req.query) };
+    if (req.query.status) query.status = req.query.status;
+
+    const sort = buildSort(req.query);
+    const { page, limit, skip } = buildPaginate(req.query);
+
+    const [items, total] = await Promise.all([
+      Vehicle.find(query).sort(sort).skip(skip).limit(limit),
+      Vehicle.countDocuments(query)
+    ]);
+
+    res.json({ page, limit, total, pages: Math.ceil(total / limit), items });
+  } catch (e) { next(e); }
 });
 
-router.post("/", validateVehicle, (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
+router.get('/:id', async (req, res, next) => {
   try {
-    const newVehicle = addNewVehicle(req.body);
-    res.status(201).json(newVehicle);
-  } catch (error) {
-    res.status(500).json({ error: "Server error creating vehicle." });
-  }
+    const doc = await Vehicle.findById(req.params.id);
+    if (!doc) return res.status(404).json({ message: 'Vehicle not found' });
+    res.json(doc);
+  } catch (e) { next(e); }
 });
 
-router.put("/:id", validateVehicle, (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
+router.put('/:id', validateVehicle, async (req, res, next) => {
   try {
-    const updatedVehicle = updateExistingVehicle(req.params.id, req.body);
-    if (!updatedVehicle) return res.status(404).json({ error: "Vehicle not found" });
-    res.json(updatedVehicle);
-  } catch (error) {
-    res.status(500).json({ error: "Server error updating vehicle." });
-  }
+    const doc = await Vehicle.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!doc) return res.status(404).json({ message: 'Vehicle not found' });
+    res.json(doc);
+  } catch (e) { next(e); }
 });
 
-router.delete("/:id", (req, res) => {
+
+router.delete('/:id', async (req, res, next) => {
   try {
-    const deletedVehicle = deleteVehicle(req.params.id);
-    if (!deletedVehicle) return res.status(404).json({ error: "Vehicle not found" });
-    res.json(deletedVehicle);
-  } catch (error) {
-    res.status(500).json({ error: "Server error deleting vehicle." });
-  }
+    const doc = await Vehicle.findByIdAndDelete(req.params.id);
+    if (!doc) return res.status(404).json({ message: 'Vehicle not found' });
+    res.status(204).send();
+  } catch (e) { next(e); }
 });
 
 module.exports = router;

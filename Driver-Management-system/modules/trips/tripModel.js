@@ -1,59 +1,59 @@
-const fs = require('fs');
-const path = require('path');
+const { Schema, model, Types } = require('mongoose');
 
-const tripsPath = path.join(__dirname, '../../data/trips.json');
+const TripSchema = new Schema(
+  {
+    driver: {
+      type: Types.ObjectId,
+      ref: 'Driver',
+      required: [true, 'Driver reference is required']
+    },
+    vehicle: {
+      type: Types.ObjectId,
+      ref: 'Vehicle',
+      required: [true, 'Vehicle reference is required']
+    },
+    origin: {
+      type: String,
+      required: [true, 'Origin is required'],
+      trim: true
+    },
+    destination: {
+      type: String,
+      required: [true, 'Destination is required'],
+      trim: true
+    },
+    startTime: {
+      type: Date,
+      required: [true, 'Trip start time is required']
+    },
+    endTime: {
+      type: Date,
+      validate: {
+        validator: function (value) {
+          return !value || value >= this.startTime;
+        },
+        message: 'End time must be after start time'
+      }
+    },
+    status: {
+      type: String,
+      enum: ['scheduled', 'in_progress', 'completed', 'canceled'],
+      default: 'scheduled'
+    },
+    fare: {
+      type: Number,
+      min: [0, 'Fare cannot be negative'],
+      default: 0
+    },
+    notes: {
+      type: String,
+      trim: true,
+      maxlength: [200, 'Notes cannot exceed 200 characters']
+    }
+  },
+  { timestamps: true }
+);
 
-const readTrips = () => {
-  const data = fs.readFileSync(tripsPath, '');
-  return JSON.parse(data);
-};
+TripSchema.index({ origin: 'text', destination: 'text' });
 
-const writeTrips = (data) => {
-  fs.writeFileSync(tripsPath, JSON.stringify(data, null, 2));
-};
-
-const getAllTrips = () => {
-  return readTrips();
-};
-
-const getTripByID = (id) => {
-  const trips = readTrips();
-  return trips.find(t => t.id === parseInt(id));
-};
-
-const addNewTrip = (tripData) => {
-  const trips = readTrips();
-  const newId = trips.length > 0 ? Math.max(...trips.map(t => t.id)) + 1 : 1;
-  const newTrip = { id: newId, ...tripData };
-  trips.push(newTrip);
-  writeTrips(trips);
-  return newTrip;
-};
-
-const updateExistingTrip = (id, updateData) => {
-  const trips = readTrips();
-  const tripIndex = trips.findIndex(t => t.id === parseInt(id));
-  if (tripIndex === -1) return null;
-  
-  trips[tripIndex] = { ...trips[tripIndex], ...updateData };
-  writeTrips(trips);
-  return trips[tripIndex];
-};
-
-const deleteTrip = (id) => {
-  const trips = readTrips();
-  const tripIndex = trips.findIndex(t => t.id === parseInt(id));
-  if (tripIndex === -1) return null;
-  
-  const deletedTrip = trips.splice(tripIndex, 1)[0];
-  writeTrips(trips);
-  return deletedTrip;
-};
-
-module.exports = {
-  getAllTrips,
-  getTripByID,
-  addNewTrip,
-  updateExistingTrip,
-  deleteTrip
-};
+module.exports = model('Trip', TripSchema);

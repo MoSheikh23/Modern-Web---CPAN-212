@@ -1,59 +1,35 @@
-const fs = require('fs');
-const path = require('path');
+const { Schema, model } = require('mongoose');
 
-const driversPath = path.join(__dirname, '../../data/drivers.json');
+const DriverSchema = new Schema(
+  {
+    name: {
+      type: String,
+      required: [true, 'Driver name is required'],
+      trim: true,
+      minlength: [2, 'Name must be at least 2 characters'],
+      maxlength: [50, 'Name cannot exceed 50 characters']
+    },
+    licenseNumber: {
+      type: String,
+      required: [true, 'License number is required'],
+      unique: true,
+      uppercase: true,
+      match: [/^[A-Z0-9-]+$/, 'License number must contain only letters, numbers, and hyphens']
+    },
+    phone: {
+      type: String,
+      trim: true,
+      match: [/^[0-9+\-\s()]*$/, 'Phone number contains invalid characters']
+    },
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'suspended'],
+      default: 'active'
+    }
+  },
+  { timestamps: true }
+);
 
-const readDrivers = () => {
-  const data = fs.readFileSync(driversPath, '');
-  return JSON.parse(data);
-};
+DriverSchema.index({ name: 'text', licenseNumber: 'text' });
 
-const writeDrivers = (data) => {
-  fs.writeFileSync(driversPath, JSON.stringify(data, null, 2));
-};
-
-const getAllDrivers = () => {
-  return readDrivers();
-};
-
-const getDriverByID = (id) => {
-  const drivers = readDrivers();
-  return drivers.find(d => d.id === parseInt(id));
-};
-
-const addNewDriver = (driverData) => {
-  const drivers = readDrivers();
-  const newId = drivers.length > 0 ? Math.max(...drivers.map(d => d.id)) + 1 : 1;
-  const newDriver = { id: newId, ...driverData };
-  drivers.push(newDriver);
-  writeDrivers(drivers);
-  return newDriver;
-};
-
-const updateExistingDriver = (id, updateData) => {
-  const drivers = readDrivers();
-  const driverIndex = drivers.findIndex(d => d.id === parseInt(id));
-  if (driverIndex === -1) return null;
-  
-  drivers[driverIndex] = { ...drivers[driverIndex], ...updateData };
-  writeDrivers(drivers);
-  return drivers[driverIndex];
-};
-
-const deleteDriver = (id) => {
-  const drivers = readDrivers();
-  const driverIndex = drivers.findIndex(d => d.id === parseInt(id));
-  if (driverIndex === -1) return null;
-  
-  const deletedDriver = drivers.splice(driverIndex, 1)[0];
-  writeDrivers(drivers);
-  return deletedDriver;
-};
-
-module.exports = {
-  getAllDrivers,
-  getDriverByID,
-  addNewDriver,
-  updateExistingDriver,
-  deleteDriver
-};
+module.exports = model('Driver', DriverSchema);

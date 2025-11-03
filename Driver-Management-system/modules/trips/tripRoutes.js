@@ -1,67 +1,72 @@
-const express = require("express");
-const router = express.Router();
-const { validationResult } = require("express-validator");
-const {
-  getAllTrips,
-  getTripByID,
-  addNewTrip,
-  updateExistingTrip,
-  deleteTrip
-} = require("./tripModel");
-const { validateTrip } = require("../../shared/middlewares/tripValidation");
+const router = require('express').Router();
+const Trip = require('./tripModel');
+const validateTrip = require('./tripValidation');
+const { buildQuery, buildSort, buildPaginate } = require('../query.utils');
 
-router.get("/", (req, res) => {
-  try {
-    const trips = getAllTrips();
-    res.json(trips);
-  } catch (error) {
-    res.status(500).json({ error: "Server error fetching trips." });
-  }
+
+router.post('/', validateTrip, async (req, res, next) => {
+  try { res.status(201).json(await Trip.create(req.body)); }
+  catch (e) { next(e); }
 });
 
-router.get("/:id", (req, res) => {
+
+router.get('/', async (req, res, next) => {
   try {
-    const trip = getTripByID(req.params.id);
-    if (!trip) return res.status(404).json({ error: "Trip not found" });
-    res.json(trip);
-  } catch (error) {
-    res.status(500).json({ error: "Server error fetching trip." });
-  }
+    const query = { ...buildQuery(req.query) };
+    if (req.query.status) query.status = req.query.status;
+    if (req.query.driver) query.driver = req.query.driver;
+    if (req.query.vehicle) query.vehicle = req.query.vehicle;
+
+   
+    if (req.query.from || req.query.to) {
+      query.startTime = {};
+      if (req.query.from) query.startTime.$gte = new Date(req.query.from);
+      if (req.query.to) query.startTime.$lte = new Date(req.query.to);
+    }
+
+    const sort = buildSort(req.query);
+    const { page, limit, skip } = buildPaginate(req.query);
+
+    const [items, total] = await Promise.all([
+      Trip.find(query)
+        .populate('driver', 'name licenseNumber')
+        .populate('vehicle', 'plate make model')
+        .sort(sort)
+        .skip(skip)
+        .limit(limit),
+      Trip.countDocuments(query)
+    ]);
+
+    res.json({ page, limit, total, pages: Math.ceil(total / limit), items });
+  } catch (e) { next(e); }
 });
 
-router.post("/", validateTrip, (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
+router.get('/:id', async (req, res, next) => {
   try {
-    const newTrip = addNewTrip(req.body);
-    res.status(201).json(newTrip);
-  } catch (error) {
-    res.status(500).json({ error: "Server error creating trip." });
-  }
+    const doc = await Trip.findById(req.params.id)
+      .populate('driver', 'name licenseNumber')
+      .populate('vehicle', 'plate make model');
+    if (!doc) return res.status(404).json({ message: 'Trip not found' });
+    res.json(doc);
+  } catch (e) { next(e); }
 });
 
-router.put("/:id", validateTrip, (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
+router.put('/:id', validateTrip, async (req, res, next) => {
   try {
-    const updatedTrip = updateExistingTrip(req.params.id, req.body);
-    if (!updatedTrip) return res.status(404).json({ error: "Trip not found" });
-    res.json(updatedTrip);
-  } catch (error) {
-    res.status(500).json({ error: "Server error updating trip." });
-  }
+    const doc = await Trip.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!doc) return res.status(404).json({ message: 'Trip not found' });
+    res.json(doc);
+  } catch (e) { next(e); }
 });
 
-router.delete("/:id", (req, res) => {
+
+router.delete('/:id', async (req, res, next) => {
   try {
-    const deletedTrip = deleteTrip(req.params.id);
-    if (!deletedTrip) return res.status(404).json({ error: "Trip not found" });
-    res.json(deletedTrip);
-  } catch (error) {
-    res.status(500).json({ error: "Server error deleting trip." });
-  }
+    const doc = await Trip.findByIdAndDelete(req.params.id);
+    if (!doc) return res.status(404).json({ message: 'Trip not found' });
+    res.status(204).send();
+  } catch (e) { next(e); }
 });
 
 module.exports = router;

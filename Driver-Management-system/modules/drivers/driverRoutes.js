@@ -1,67 +1,58 @@
-const express = require("express");
-const router = express.Router();
-const { validationResult } = require("express-validator");
-const {
-  getAllDrivers,
-  getDriverByID,
-  addNewDriver,
-  updateExistingDriver,
-  deleteDriver
-} = require("./driverModel");
-const { validateDriver } = require("../../shared/middlewares/driverValidation");
+const router = require('express').Router();
+const Driver = require('./driverModel');
+const validateDriver = require('./driverValidation');
+const { buildQuery, buildSort, buildPaginate } = require('../query.utils');
 
-router.get("/", (req, res) => {
+
+router.post('/', validateDriver, async (req, res, next) => {
   try {
-    const drivers = getAllDrivers();
-    res.json(drivers);
-  } catch (error) {
-    res.status(500).json({ error: "Server error fetching drivers." });
-  }
+    const doc = await Driver.create(req.body);
+    res.status(201).json(doc);
+  } catch (e) { next(e); }
 });
 
-router.get("/:id", (req, res) => {
+
+router.get('/', async (req, res, next) => {
   try {
-    const driver = getDriverByID(req.params.id);
-    if (!driver) return res.status(404).json({ error: "Driver not found" });
-    res.json(driver);
-  } catch (error) {
-    res.status(500).json({ error: "Server error fetching driver." });
-  }
+    const query = { ...buildQuery(req.query) };
+    if (req.query.status) query.status = req.query.status;
+
+    const sort = buildSort(req.query);
+    const { page, limit, skip } = buildPaginate(req.query);
+
+    const [items, total] = await Promise.all([
+      Driver.find(query).sort(sort).skip(skip).limit(limit),
+      Driver.countDocuments(query)
+    ]);
+
+    res.json({ page, limit, total, pages: Math.ceil(total / limit), items });
+  } catch (e) { next(e); }
 });
 
-router.post("/", validateDriver, (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
+router.get('/:id', async (req, res, next) => {
   try {
-    const newDriver = addNewDriver(req.body);
-    res.status(201).json(newDriver);
-  } catch (error) {
-    res.status(500).json({ error: "Server error creating driver." });
-  }
+    const doc = await Driver.findById(req.params.id);
+    if (!doc) return res.status(404).json({ message: 'Driver not found' });
+    res.json(doc);
+  } catch (e) { next(e); }
 });
 
-router.put("/:id", validateDriver, (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
+router.put('/:id', validateDriver, async (req, res, next) => {
   try {
-    const updatedDriver = updateExistingDriver(req.params.id, req.body);
-    if (!updatedDriver) return res.status(404).json({ error: "Driver not found" });
-    res.json(updatedDriver);
-  } catch (error) {
-    res.status(500).json({ error: "Server error updating driver." });
-  }
+    const doc = await Driver.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!doc) return res.status(404).json({ message: 'Driver not found' });
+    res.json(doc);
+  } catch (e) { next(e); }
 });
 
-router.delete("/:id", (req, res) => {
+router.delete('/:id', async (req, res, next) => {
   try {
-    const deletedDriver = deleteDriver(req.params.id);
-    if (!deletedDriver) return res.status(404).json({ error: "Driver not found" });
-    res.json(deletedDriver);
-  } catch (error) {
-    res.status(500).json({ error: "Server error deleting driver." });
-  }
+    const doc = await Driver.findByIdAndDelete(req.params.id);
+    if (!doc) return res.status(404).json({ message: 'Driver not found' });
+    res.status(204).send();
+  } catch (e) { next(e); }
 });
 
 module.exports = router;
