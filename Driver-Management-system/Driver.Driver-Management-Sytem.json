@@ -1,6 +1,10 @@
-{
+[{
+  "_id": {
+    "$oid": "6907f1ea6d3437e97ced25e7"
+  },
   "name": "driver-management-system",
   "version": "1.0.0",
+  "description": "CPAN-212 Driver Management System - Phase 3 (MongoDB + Mongoose)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -19,4 +23,4 @@
   "devDependencies": {
     "nodemon": "^3.1.4"
   }
-}
+}]

@@ -1,34 +1,28 @@
-const express = require("express");
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+
+const connectDb = require('./shared/middlewares/connect-db');
+
 const app = express();
-const PORT = 3000;
-
+app.use(cors());
 app.use(express.json());
+app.use(connectDb);
+
+app.use('/api/drivers', require('./modules/drivers/driverRoutes'));
+app.use('/api/vehicles', require('./modules/vehicles/vehicleRoutes'));
+app.use('/api/trips', require('./modules/trips/tripRoutes'));
+
+app.get('/', (_req, res) => res.json({ ok: true, service: 'Driver-Management-System' }));
 
 
-const driverRoutes = require("./modules/drivers/driverRoutes");
-const vehicleRoutes = require("./modules/vehicles/vehicleRoutes");
-const tripRoutes = require("./modules/trips/tripRoutes");
-
-
-app.use("/drivers", driverRoutes);
-app.use("/vehicles", vehicleRoutes);
-app.use("/trips", tripRoutes);
-
-app.get("/", (req, res) => {
-  res.send("Drive Management System API is running...");
+app.use((err, _req, res, _next) => {
+  console.error(err);
+  const code =
+    err.name === 'ValidationError' ? 400 :
+    err.name === 'CastError' ? 400 : 500;
+  res.status(code).json({ error: err.message });
 });
 
-
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
-app.use((error, req, res, next) => {
-  console.error(error);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
-
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log(` API running on http://localhost:${port}`));
