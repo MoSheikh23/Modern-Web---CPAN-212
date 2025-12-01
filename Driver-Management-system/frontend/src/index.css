@@ -1,0 +1,121 @@
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background-color: #f4f4f4;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+.navbar {
+  background-color: #222;
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.nav-link {
+  color: white;
+  margin-left: 1rem;
+  text-decoration: none;
+}
+
+.nav-link.active {
+  text-decoration: underline;
+}
+
+.main-content {
+  padding: 2rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid #ddd;
+  padding: 0.5rem 0.75rem;
+}
+
+.data-table th {
+  background-color: #eee;
+}
+
+.btn {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  background-color: #1976d2;
+  color: white;
+  cursor: pointer;
+  text-decoration: none;
+  border-radius: 3px;
+}
+
+.btn.primary {
+  background-color: #1976d2;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+.error {
+  color: #b00020;
+  margin-bottom: 0.5rem;
+}
+
+.success {
+  color: #1b5e20;
+  margin-bottom: 0.5rem;
+}
+
+.error-field {
+  color: #b00020;
+  font-size: 0.8rem;
+  display: block;
+}
+
+.form {
+  max-width: 450px;
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 4px;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  box-sizing: border-box;
+}
+
+.pagination {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
