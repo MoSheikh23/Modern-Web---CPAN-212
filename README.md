@@ -1,35 +1,4 @@
-Mohamed Sheikh - Set up the React (Vite) frontend folder and configured the project structure required for Phase 4.
-
-Implemented the main React Router navigation, connecting the Dashboard, Drivers, Vehicles, and Trips pages.
-
-Built the core CRUD functionality for all modules, including list tables, edit pages, and delete actions.
-
-Created the Axios API service layer and integrated all routes with the Express + MongoDB backend.
-
-Developed client-side form validation for required fields to ensure clean, error-free submissions.
-
-Implemented UI feedback such as success messages and error handling for create, update, and delete operations.
-
-Ensured the frontend correctly handled pagination, searching, and sorting, matching backend query utilities.
-
-Tested all components to confirm data was being sent and received correctly from MongoDB Atlas.
-
- Mohamed Mohamed – Worked collaboratively on the full React frontend and contributed to all three modules: Drivers, Vehicles, and Trips.
-
-Focused on building the form components, including creation and editing interfaces for each module.
-
-Added proper data binding so form fields displayed existing values during editing and updated state correctly.
-
-Integrated driver and vehicle dropdowns into the Trip form using data fetched from the backend.
-
-Enhanced the user interface by improving input validation, formatting, and error display across all forms.
-
-Assisted with connecting the frontend actions to backend routes to ensure accurate CRUD behavior.
-
-Participated in UI testing to confirm that all forms, buttons, navigation links, and table actions worked smoothly.
-
-Helped finalize the folder structure and ensured the frontend met all Phase 4 requirements for style, validation, and functionality.
-
-Both Me and Mohamed came together in the same location to work on this Phase 4. 
+Mohamed Sheikh - focused on defining access roles, securing backend routes, and implementing role-based access control (RBAC). He identified which routes should remain public (registration, login, OTP verification) and which must be protected by JWT authentication. He also mapped user roles to system permissions, ensuring that admins have full control while customers have limited access to viewing data. Mohamed developed the RBAC middleware (authenticate and authorize) that validates tokens and checks user roles before allowing access to protected endpoints. He integrated this middleware into all backend modules—Drivers, Vehicles, and Trips—clearly separating public, protected, and role-restricted routes. On the frontend, he implemented the main login page, token-based route protection through a ProtectedRoute component, and logout functionality to properly clear session data. His work ensured that the system enforces correct permissions and maintains secure access control across both backend and frontend.
+Mohamed Mohamed - implemented the full authentication and multi-factor verification (MFA) workflow for the project. He built backend routes for email/password login, OTP generation, and OTP verification using Nodemailer and a temporary in-memory store. After validating credentials, his login handler generates a 6-digit OTP and emails it to the user, while the OTP verification route confirms identity and issues a signed JWT containing the user’s ID, email, and role. Mohamed also created the frontend OTP verification screen, allowing users to enter their code and receive their access token upon success. He configured Axios with an interceptor to automatically attach the JWT to all protected API requests, ensuring secure communication between frontend and backend. His work completed the entire MFA pipeline—login → OTP → JWT—and enabled secure authenticated sessions throughout the system.
 
 
