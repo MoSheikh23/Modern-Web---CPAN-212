@@ -6,28 +6,25 @@ const nodemailer = require("nodemailer");
 
 const User = require("./userModel");
 
-
-let pendingOtps = {}; 
+let pendingOtps = {};
 
 router.post("/register", async (req, res) => {
-  console.log("REGISTER BODY:", req.body);
-
+  console.log("REGISTER HIT:", req.body);
   const { email, password, role } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email and password are required" });
-  }
+  if (!email || !password)
+    return res.status(400).json({ error: "Email and password required" });
 
-  const existing = User.getUserByEmail(email);
+  const existing = await User.findOne({ email });
   if (existing)
     return res.status(400).json({ error: "User already exists" });
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  const newUser = User.addUser({
+  const newUser = await User.create({
     email,
-    role: role || "user",
     passwordHash,
+    role: role || "user",
   });
 
   res.json({
@@ -36,22 +33,25 @@ router.post("/register", async (req, res) => {
   });
 });
 
-
+// LOGIN
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  const user = User.getUserByEmail(email);
-  if (!user) return res.status(400).json({ error: "Invalid credentials" });
+  const user = await User.findOne({ email });
+  if (!user)
+    return res.status(400).json({ error: "Invalid credentials" });
 
   const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) return res.status(400).json({ error: "Invalid credentials" });
+  if (!ok)
+    return res.status(400).json({ error: "Invalid credentials" });
+
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = Date.now() + 5 * 60 * 1000;
 
   pendingOtps[email] = { otp, expiresAt };
 
-
+ 
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -67,15 +67,16 @@ router.post("/login", async (req, res) => {
     text: `Your OTP is: ${otp}`,
   });
 
-  res.json({ message: "OTP sent to email" });
+  res.json({ message: "OTP sent" });
 });
 
 
-router.post("/verify-otp", (req, res) => {
+router.post("/verify-otp", async (req, res) => {
   const { email, otp } = req.body;
 
   const record = pendingOtps[email];
-  if (!record) return res.status(400).json({ error: "No OTP request" });
+  if (!record)
+    return res.status(400).json({ error: "No OTP request found" });
 
   if (record.expiresAt < Date.now())
     return res.status(400).json({ error: "OTP expired" });
@@ -83,10 +84,10 @@ router.post("/verify-otp", (req, res) => {
   if (record.otp !== otp)
     return res.status(400).json({ error: "Invalid OTP" });
 
-  const user = User.getUserByEmail(email);
+  const user = await User.findOne({ email });
 
   const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user._id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: "1h" }
   );
@@ -95,6 +96,5 @@ router.post("/verify-otp", (req, res) => {
 
   res.json({ token });
 });
-
 
 module.exports = router;

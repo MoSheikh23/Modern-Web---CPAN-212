@@ -1,25 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { verifyOtp } from "../../api/auth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 export default function VerifyOtp() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const email = params.get("email");
 
+  useEffect(() => {
+    if (!email) navigate("/login");
+  }, [email, navigate]);
+
   const handleVerify = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
       const { data } = await verifyOtp({ email, otp });
-      localStorage.setItem("token", data.token);
+
+      if (data?.token) {
+        localStorage.setItem("token", data.token);
+      }
+
       navigate("/");
     } catch (err) {
-      setError(err?.response?.data?.error || "Invalid OTP");
+      setError(err?.response?.data?.error || "Invalid OTP. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -35,10 +47,22 @@ export default function VerifyOtp() {
           value={otp}
           placeholder="Enter OTP"
           onChange={(e) => setOtp(e.target.value)}
+          required
           style={{ width: "100%", padding: 10, marginBottom: 10 }}
         />
 
-        <button style={{ width: "100%", padding: 10 }}>Verify</button>
+        <button
+          disabled={loading}
+          style={{
+            width: "100%",
+            padding: 10,
+            background: loading ? "#888" : "#333",
+            color: "white",
+            cursor: "pointer"
+          }}
+        >
+          {loading ? "Verifying..." : "Verify"}
+        </button>
       </form>
     </div>
   );

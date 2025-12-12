@@ -14,10 +14,16 @@ export default function Login() {
     setError("");
 
     try {
-      await loginUser({ email, password });
-      navigate("/verify-otp?email=" + email);
+      const res = await loginUser({ email, password });
+
+      // If backend sends pre-token (optional)
+      if (res.data?.token) {
+        localStorage.setItem("token", res.data.token);
+      }
+
+      navigate(`/verify-otp?email=${email}`);
     } catch (err) {
-      setError(err?.response?.data?.error || "Login failed");
+      setError(err?.response?.data?.error || "Login failed. Try again.");
     }
   };
 

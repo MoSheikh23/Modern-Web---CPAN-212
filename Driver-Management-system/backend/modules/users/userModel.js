@@ -1,39 +1,27 @@
-const fs = require("fs");
-const path = require("path");
+const mongoose = require("mongoose");
 
-const usersPath = path.join(__dirname, "../../data/users.json");
+const userSchema = new mongoose.Schema(
+  {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
 
-function loadUsers() {
-  const data = fs.readFileSync(usersPath);
-  return JSON.parse(data);
-}
+    passwordHash: {
+      type: String,
+      required: true,
+    },
 
-function saveUsers(users) {
-  fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
-}
-
-module.exports = {
-  getAllUsers: () => loadUsers(),
-
-  getUserByEmail: (email) => {
-    return loadUsers().find((u) => u.email === email);
+    role: {
+      type: String,
+      enum: ["admin", "customer", "user"],
+      default: "user",
+    }
   },
+  { timestamps: true }
+);
 
-  addUser: (userData) => {
-    const users = loadUsers();
-    userData.id = users.length + 1;
-    users.push(userData);
-    saveUsers(users);
-    return userData;
-  },
-
-  updateUser: (email, updated) => {
-    const users = loadUsers();
-    const idx = users.findIndex((u) => u.email === email);
-    if (idx === -1) return null;
-
-    users[idx] = { ...users[idx], ...updated };
-    saveUsers(users);
-    return users[idx];
-  },
-};
+module.exports = mongoose.model("User", userSchema);
